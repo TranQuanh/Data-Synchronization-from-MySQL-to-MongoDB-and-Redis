@@ -1,0 +1,85 @@
+from dotenv import load_dotenv
+import os
+from dataclasses import dataclass
+
+@dataclass
+class MySQLConfig():
+    host: str
+    port: int
+    user: str
+    password : str
+    database: str
+    table: str = 'users'
+
+@dataclass
+class MongoDBConfig():
+    uri : str
+    db_name : str
+    collection: str = "users"
+
+@dataclass
+class RedisConfig():
+    host: str
+    port: str
+    user: str
+    password: str
+    database: str
+def get_database_config():
+    load_dotenv()
+
+    config = {
+        "mysql" : MySQLConfig(
+            host=os.getenv('MYSQL_HOST'),
+            port = os.getenv('MYSQL_PORT'),
+            user = os.getenv('MYSQL_USER'),
+            password = os.getenv('MYSQL_PASSWORD'),
+            database = os.getenv('MYSQL_DATABASE')
+        ),
+        "mongodb" : MongoDBConfig(
+            uri = os.getenv("MONGO_URI"),
+            db_name = os.getenv("MONGO_DB_NAME"),
+            collection= os.getenv("MONGO_COLLECTION")
+        ),
+        "redis": RedisConfig(
+            host = os.getenv("REDIS_HOST"),
+            port = os.getenv("REDIS_PORT"),
+            user = os.getenv("REDIS_USER"),
+            password = os.getenv("REDIS_PASSWORD"),
+            database = os.getenv("REDIS_DATABASE")
+        )
+    }
+
+    return config
+
+def get_spark_config():
+    db_config = get_database_config()
+
+    return {
+        "mysql": {
+                    "table" :db_config["mysql"].table,
+                    # "jdbc:mysql://localhost:3306/yourdatabase"
+                    "jdbc_url": "jdbc:mysql://{}:{}/{}".format(db_config["mysql"].host,db_config["mysql"].port,db_config["mysql"].database),
+                    "config": {
+                        "host": db_config["mysql"].host,
+                        "port": db_config["mysql"].port,
+                        "user": db_config["mysql"].user,
+                        "password": db_config["mysql"].password,
+                        "database": db_config["mysql"].database
+                    }
+                },
+        "mongodb":{
+            "uri": db_config["mongodb"].uri,
+            "database": db_config["mongodb"].db_name,
+            "collection": db_config["mongodb"].collection
+        },
+        "redis": {
+            "host": db_config["redis"].host,
+            "port": db_config["redis"].port,
+            "password": db_config["redis"].password,
+            "database": db_config["redis"].database
+        }
+        }
+
+# if __name__ =="__main__":
+#     config = get_spark_config()
+#     print(config)
